@@ -6,8 +6,22 @@ import { Role } from '@/types'
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
   const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
-  const token = await getToken({ req, secret })
+
+  // NextAuth v5 (Auth.js) uses 'authjs.session-token' cookie on HTTP
+  // and '__Secure-authjs.session-token' on HTTPS
+  const isSecure = req.nextUrl.protocol === 'https:'
+  const cookieName = isSecure
+    ? '__Secure-authjs.session-token'
+    : 'authjs.session-token'
+
+  const token = await getToken({ req, secret, cookieName })
   const role = token?.role as Role | undefined
+
+  // Debug logging for Vercel
+  if (!token) {
+    const cookies = req.cookies.getAll().map(c => c.name)
+    console.log(`[middleware] No token found. Path: ${pathname}, Cookies: [${cookies.join(', ')}], CookieName tried: ${cookieName}`)
+  }
 
   if (pathname.startsWith('/dashboard')) {
     if (!role) {

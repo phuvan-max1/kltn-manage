@@ -66,18 +66,21 @@ export default function LoginPage() {
         return
       }
 
-      // After successful credentials login, refresh session and redirect based on role
-      // Need to wait for session to update
-      const sessionRes = await fetch('/api/auth/session')
-      const sessionData = await sessionRes.json()
+      // After successful credentials login, try to get the session with retries
+      let sessionData = null
+      for (let i = 0; i < 3; i++) {
+        await new Promise(r => setTimeout(r, 500))
+        const sessionRes = await fetch('/api/auth/session')
+        sessionData = await sessionRes.json()
+        if (sessionData?.user?.role) break
+      }
       
       if (sessionData?.user?.role) {
         const role = sessionData.user.role as Role
         const target = ROLE_DASHBOARD_MAP[role]
-        router.replace(target || '/dashboard/student')
+        window.location.href = target || '/dashboard/student'
       } else {
-        // Fallback: refresh page to let useEffect handle redirect
-        router.refresh()
+        // Fallback: force full page reload to let server handle redirect
         window.location.href = '/'
       }
     } catch {
