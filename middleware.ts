@@ -5,7 +5,8 @@ import { Role } from '@/types'
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
+  const token = await getToken({ req, secret })
   const role = token?.role as Role | undefined
 
   if (pathname.startsWith('/dashboard')) {
